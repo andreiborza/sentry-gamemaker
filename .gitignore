@@ -42,3 +42,12 @@
 
 # debug information files
 *.dwo
+
+# Claude
+.claude
+
+# Build
+build/ 
+
+# VSCode
+.vscode/
