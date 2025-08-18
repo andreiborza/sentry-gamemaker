@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(SentrySample)
+project(SentryGameMaker)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -20,29 +20,39 @@ if(NOT SENTRY_LIB)
     message(FATAL_ERROR "Sentry library not found in ${SENTRY_LIB_DIR}")
 endif()
 
-# Create executable
-add_executable(sample src/main.cpp)
+# Create GameMaker extension library (main target)
+add_library(sentry_gm SHARED src/sentry_gm.cpp)
 
-# Set include directories
-target_include_directories(sample PRIVATE ${SENTRY_INCLUDE_DIR})
+# Set include directories for extension
+target_include_directories(sentry_gm PRIVATE ${SENTRY_INCLUDE_DIR})
 
-# Link libraries
-target_link_libraries(sample ${SENTRY_LIB})
+# Link libraries for extension
+target_link_libraries(sentry_gm ${SENTRY_LIB})
 
 # For macOS, we need to set the rpath to find the dylib
 if(APPLE)
-    set_target_properties(sample PROPERTIES
+    set_target_properties(sentry_gm PROPERTIES
         INSTALL_RPATH "${SENTRY_LIB_DIR}"
         BUILD_WITH_INSTALL_RPATH TRUE
+        PREFIX "lib"
+        SUFFIX ".dylib"
     )
 endif()
 
-# Copy crashpad_handler binary to output directory
-add_custom_command(TARGET sample POST_BUILD
+# Copy the built library to the extension directory
+add_custom_command(TARGET sentry_gm POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        $<TARGET_FILE:sentry_gm>
+        "${CMAKE_CURRENT_SOURCE_DIR}/extension/Sentry/libsentry_gm.dylib"
+    COMMENT "Copying GameMaker extension library to extension directory"
+)
+
+# Copy crashpad_handler binary to extension directory (needed for crash handling)
+add_custom_command(TARGET sentry_gm POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
         "${SENTRY_NATIVE_DIR}/bin/crashpad_handler"
-        $<TARGET_FILE_DIR:sample>
-    COMMENT "Copying crashpad_handler to output directory"
+        "${CMAKE_CURRENT_SOURCE_DIR}/extension/Sentry/"
+    COMMENT "Copying crashpad_handler to extension directory"
 )
 
 # Print some info
