@@ -1,6 +1,6 @@
 {
   "$GMProject":"v1",
-  "%Name":"Space Rocks",
+  "%Name":"sentry-gamemaker",
   "AudioGroups":[
     {"$GMAudioGroup":"","%Name":"audiogroup_default","name":"audiogroup_default","resourceType":"GMAudioGroup","resourceVersion":"2.0","targets":-1,},
   ],
@@ -33,23 +33,15 @@
   "MetaData":{
     "IDEVersion":"2024.13.1.193",
   },
-  "name":"Space Rocks",
+  "name":"sentry-gamemaker",
   "resources":[
     {"id":{"name":"sentry_gamemaker","path":"extensions/sentry_gamemaker/sentry_gamemaker.yy",},},
-    {"id":{"name":"LINK_TO_TUTORIALS","path":"notes/LINK_TO_TUTORIALS/LINK_TO_TUTORIALS.yy",},},
-    {"id":{"name":"GameController","path":"objects/GameController/GameController.yy",},},
-    {"id":{"name":"obj_asteroid","path":"objects/obj_asteroid/obj_asteroid.yy",},},
-    {"id":{"name":"obj_player","path":"objects/obj_player/obj_player.yy",},},
-    {"id":{"name":"rm_game","path":"rooms/rm_game/rm_game.yy",},},
-    {"id":{"name":"spr_bullet","path":"sprites/spr_bullet/spr_bullet.yy",},},
-    {"id":{"name":"spr_player","path":"sprites/spr_player/spr_player.yy",},},
-    {"id":{"name":"spr_rock_big","path":"sprites/spr_rock_big/spr_rock_big.yy",},},
-    {"id":{"name":"spr_rock_small","path":"sprites/spr_rock_small/spr_rock_small.yy",},},
+    {"id":{"name":"Room1","path":"rooms/Room1/Room1.yy",},},
   ],
   "resourceType":"GMProject",
   "resourceVersion":"2.0",
   "RoomOrderNodes":[
-    {"roomId":{"name":"rm_game","path":"rooms/rm_game/rm_game.yy",},},
+    {"roomId":{"name":"Room1","path":"rooms/Room1/Room1.yy",},},
   ],
   "templateType":"game",
   "TextureGroups":[

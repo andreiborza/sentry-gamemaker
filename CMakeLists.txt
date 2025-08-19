@@ -9,6 +9,7 @@ set(SENTRY_NATIVE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/sentry-native")
 set(SENTRY_INCLUDE_DIR "${SENTRY_NATIVE_DIR}/include")
 set(SENTRY_LIB_DIR "${SENTRY_NATIVE_DIR}/lib")
 
+
 # Find the sentry library
 find_library(SENTRY_LIB
     NAMES sentry libsentry
@@ -25,6 +26,7 @@ add_library(sentry_gm SHARED src/sentry_gm.cpp)
 
 # Set include directories for extension
 target_include_directories(sentry_gm PRIVATE ${SENTRY_INCLUDE_DIR})
+
 
 # Link libraries for extension
 target_link_libraries(sentry_gm ${SENTRY_LIB})
@@ -53,6 +55,31 @@ add_custom_command(TARGET sentry_gm POST_BUILD
         "${SENTRY_NATIVE_DIR}/bin/crashpad_handler"
         "${CMAKE_CURRENT_SOURCE_DIR}/extension/Sentry/"
     COMMENT "Copying crashpad_handler to extension directory"
+)
+
+# TEMPORARY: Copy files to Space Rocks demo extension directory
+add_custom_command(TARGET sentry_gm POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "TEMP: Copying libsentry_gm.dylib to Space Rocks..."
+    COMMAND ${CMAKE_COMMAND} -E copy
+        $<TARGET_FILE:sentry_gm>
+        "${CMAKE_CURRENT_SOURCE_DIR}/demo/Space Rocks/extensions/sentry_gamemaker/libsentry_gm.dylib"
+    COMMENT "TEMP: Copying dylib to Space Rocks extension directory"
+)
+
+add_custom_command(TARGET sentry_gm POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "TEMP: Copying crashpad_handler to Space Rocks..."
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_CURRENT_SOURCE_DIR}/extension/Sentry/crashpad_handler"
+        "${CMAKE_CURRENT_SOURCE_DIR}/demo/Space Rocks/extensions/sentry_gamemaker/crashpad_handler"
+    COMMENT "TEMP: Copying crashpad_handler to Space Rocks extension directory"
+)
+
+add_custom_command(TARGET sentry_gm POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "TEMP: Copying sentry_exception_handler.gml to Space Rocks..."
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_CURRENT_SOURCE_DIR}/extension/Sentry/sentry_exception_handler.gml"
+        "${CMAKE_CURRENT_SOURCE_DIR}/demo/Space Rocks/extensions/sentry_gamemaker/sentry_exception_handler.gml"
+    COMMENT "TEMP: Copying GML script to Space Rocks extension directory"
 )
 
 # Print some info
