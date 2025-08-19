@@ -41,46 +41,23 @@ if(APPLE)
     )
 endif()
 
-# Copy the built library to the extension directory
+# Copy files to SentryGameMaker demo extension directory
 add_custom_command(TARGET sentry_gm POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying libsentry_gm.dylib to SentryGameMaker..."
     COMMAND ${CMAKE_COMMAND} -E copy
         $<TARGET_FILE:sentry_gm>
-        "${CMAKE_CURRENT_SOURCE_DIR}/extension/Sentry/libsentry_gm.dylib"
-    COMMENT "Copying GameMaker extension library to extension directory"
+        "${CMAKE_CURRENT_SOURCE_DIR}/demo/SentryGameMaker/extensions/sentry_gamemaker/libsentry_gm.dylib"
+    COMMENT "Copying dylib to SentryGameMaker extension directory"
 )
 
-# Copy crashpad_handler binary to extension directory (needed for crash handling)
 add_custom_command(TARGET sentry_gm POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying crashpad_handler to SentryGameMaker..."
     COMMAND ${CMAKE_COMMAND} -E copy
         "${SENTRY_NATIVE_DIR}/bin/crashpad_handler"
-        "${CMAKE_CURRENT_SOURCE_DIR}/extension/Sentry/"
-    COMMENT "Copying crashpad_handler to extension directory"
+        "${CMAKE_CURRENT_SOURCE_DIR}/demo/SentryGameMaker/extensions/sentry_gamemaker/crashpad_handler"
+    COMMENT "Copying crashpad_handler to SentryGameMaker extension directory"
 )
 
-# TEMPORARY: Copy files to Space Rocks demo extension directory
-add_custom_command(TARGET sentry_gm POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "TEMP: Copying libsentry_gm.dylib to Space Rocks..."
-    COMMAND ${CMAKE_COMMAND} -E copy
-        $<TARGET_FILE:sentry_gm>
-        "${CMAKE_CURRENT_SOURCE_DIR}/demo/Space Rocks/extensions/sentry_gamemaker/libsentry_gm.dylib"
-    COMMENT "TEMP: Copying dylib to Space Rocks extension directory"
-)
-
-add_custom_command(TARGET sentry_gm POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "TEMP: Copying crashpad_handler to Space Rocks..."
-    COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_CURRENT_SOURCE_DIR}/extension/Sentry/crashpad_handler"
-        "${CMAKE_CURRENT_SOURCE_DIR}/demo/Space Rocks/extensions/sentry_gamemaker/crashpad_handler"
-    COMMENT "TEMP: Copying crashpad_handler to Space Rocks extension directory"
-)
-
-add_custom_command(TARGET sentry_gm POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "TEMP: Copying sentry_exception_handler.gml to Space Rocks..."
-    COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_CURRENT_SOURCE_DIR}/extension/Sentry/sentry_exception_handler.gml"
-        "${CMAKE_CURRENT_SOURCE_DIR}/demo/Space Rocks/extensions/sentry_gamemaker/sentry_exception_handler.gml"
-    COMMENT "TEMP: Copying GML script to Space Rocks extension directory"
-)
 
 # Print some info
 message(STATUS "Sentry include directory: ${SENTRY_INCLUDE_DIR}")

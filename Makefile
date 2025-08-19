@@ -13,15 +13,15 @@ extension:
 	@cd build && cmake ..
 	@cd build && make
 	@echo "✅ Extension built successfully!"
-	@echo "📁 Library: extension/Sentry/libsentry_gm.dylib"
-	@echo "📁 Handler: extension/Sentry/crashpad_handler"
+	@echo "📁 Library: demo/SentryGameMaker/extensions/sentry_gamemaker/libsentry_gm.dylib"
+	@echo "📁 Handler: demo/SentryGameMaker/extensions/sentry_gamemaker/crashpad_handler"
 
 # Clean build files and extension outputs  
 clean:
 	@echo "Cleaning build files..."
 	@rm -rf build
-	@rm -f extension/Sentry/libsentry_gm.dylib
-	@rm -f extension/Sentry/crashpad_handler
+	@rm -f demo/SentryGameMaker/extensions/sentry_gamemaker/libsentry_gm.dylib
+	@rm -f demo/SentryGameMaker/extensions/sentry_gamemaker/crashpad_handler
 	@echo "✅ Clean complete!"
 
 # Help target
@@ -33,5 +33,5 @@ help:
 	@echo "  help       - Show this help message"
 	@echo ""
 	@echo "Output files:"
-	@echo "  extension/Sentry/libsentry_gm.dylib  - GameMaker extension library"
-	@echo "  extension/Sentry/crashpad_handler    - Crash handler binary"
+	@echo "  demo/SentryGameMaker/extensions/sentry_gamemaker/libsentry_gm.dylib  - GameMaker extension library"
+	@echo "  demo/SentryGameMaker/extensions/sentry_gamemaker/crashpad_handler    - Crash handler binary"

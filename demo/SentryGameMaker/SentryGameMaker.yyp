@@ -1,6 +1,6 @@
 {
   "$GMProject":"v1",
-  "%Name":"Space Rocks",
+  "%Name":"SentryGameMaker",
   "AudioGroups":[
     {"$GMAudioGroup":"","%Name":"audiogroup_default","name":"audiogroup_default","resourceType":"GMAudioGroup","resourceVersion":"2.0","targets":-1,},
   ],
@@ -33,7 +33,7 @@
   "MetaData":{
     "IDEVersion":"2024.13.1.193",
   },
-  "name":"Space Rocks",
+  "name":"SentryGameMaker",
   "resources":[
     {"id":{"name":"sentry_gamemaker","path":"extensions/sentry_gamemaker/sentry_gamemaker.yy",},},
     {"id":{"name":"LINK_TO_TUTORIALS","path":"notes/LINK_TO_TUTORIALS/LINK_TO_TUTORIALS.yy",},},
