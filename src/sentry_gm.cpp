@@ -452,11 +452,7 @@ double sentry_gm_capture_exception_json(const char* exception_json) {
                     
                     sentry_value_set_by_key(frame, "filename", sentry_value_new_string(script.c_str()));
                     sentry_value_set_by_key(frame, "function", sentry_value_new_string(script.c_str()));
-                    
-                    if (line_number > 0) {
-                        sentry_value_set_by_key(frame, "lineno", sentry_value_new_int32((int32_t)line_number));
-                    }
-                    
+                    sentry_value_set_by_key(frame, "lineno", sentry_value_new_int32((int32_t)line_number));
                     sentry_value_set_by_key(frame, "in_app", sentry_value_new_bool(true));
                     
                     // Add frame to the stacktrace
