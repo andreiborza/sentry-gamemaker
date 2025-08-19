@@ -10,8 +10,6 @@
 #include <errno.h>
 #include <dlfcn.h>
 #include <libgen.h>
-#include <chrono>
-#include <thread>
 #include <vector>
 
 
@@ -202,20 +200,8 @@ double sentry_gm_capture_message(double level, const char* message) {
     bool is_nil = sentry_uuid_is_nil(&uuid);
     log_debug("Event captured, UUID is " + std::string(is_nil ? "NIL" : "valid"));
     
-    // BLOCKING: Force a long synchronous flush to ensure event is sent
-    log_debug("BLOCKING: Starting synchronous flush - this will wait until sent...");
-    auto start_time = std::chrono::high_resolution_clock::now();
-    
-    sentry_flush(15000); // Wait up to 15 seconds for network requests to complete
-    
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-    log_debug("BLOCKING: Flush completed after " + std::to_string(duration.count()) + "ms");
-    
-    // Give extra time for any async operations to complete
-    log_debug("BLOCKING: Adding 1 second safety buffer...");
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    log_debug("BLOCKING: Safety buffer complete - message should be fully sent");
+    // Event sent asynchronously
+    log_debug("Message event captured");
     
     return is_nil ? 0.0 : 1.0;
 }
@@ -254,10 +240,9 @@ double sentry_gm_exception_handler(const char* json_exception_data) {
         bool is_nil = sentry_uuid_is_nil(&uuid);
         log_debug("Exception captured, UUID is " + std::string(is_nil ? "NIL" : "valid"));
         
-        // CRITICAL: Force a long flush to ensure event is sent before process dies
-        log_debug("CRITICAL: Forcing long flush before process termination...");
-        sentry_flush(10000); // Wait up to 10 seconds - this is our last chance!
-        log_debug("Handler completed successfully - event should be sent");
+        // Close Sentry to ensure event is sent before process termination
+        sentry_close();
+        log_debug("Handler completed - Sentry closed");
         
         return 0.0; // Always return 0 to indicate handler completed
         
@@ -357,10 +342,8 @@ double sentry_gm_capture_exception(const char* message, const char* stack_trace,
         bool is_nil = sentry_uuid_is_nil(&uuid);
         log_debug("Exception captured, UUID is " + std::string(is_nil ? "NIL" : "valid"));
         
-        // Force flush to send immediately
-        log_debug("Flushing events...");
-        sentry_flush(2000);
-        log_debug("Flush complete");
+        // Event sent asynchronously
+        log_debug("Exception event captured");
         
         return is_nil ? 0.0 : 1.0;
         
@@ -507,10 +490,8 @@ double sentry_gm_capture_exception_json(const char* exception_json) {
         bool is_nil = sentry_uuid_is_nil(&uuid);
         log_debug("Exception captured, UUID is " + std::string(is_nil ? "NIL" : "valid"));
         
-        // CRITICAL: Force a long flush to ensure event is sent before process dies
-        log_debug("CRITICAL: Forcing long flush before process termination...");
-        sentry_flush(10000); // Wait up to 10 seconds - this is our last chance!
-        log_debug("Handler completed successfully - event should be sent");
+        // Event sent asynchronously
+        log_debug("Exception event captured");
         
         return is_nil ? 0.0 : 1.0;
         
