@@ -41,7 +41,16 @@ if(APPLE)
     )
 endif()
 
-# Copy files to SentryGameMaker demo extension directory
+# Copy extension files from src to demo project
+add_custom_command(TARGET sentry_gm POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying sentry_gamemaker extension to demo project..."
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/extensions/sentry_gamemaker"
+        "${CMAKE_CURRENT_SOURCE_DIR}/demo/SentryGameMaker/extensions/sentry_gamemaker"
+    COMMENT "Copying extension files to demo project"
+)
+
+# Copy built dylib and crashpad_handler to demo extension directory
 add_custom_command(TARGET sentry_gm POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E echo "Copying libsentry_gm.dylib to SentryGameMaker..."
     COMMAND ${CMAKE_COMMAND} -E copy
