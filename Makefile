@@ -1,4 +1,4 @@
-.PHONY: all build extension clean help
+.PHONY: all build extension clean sync help
 
 # Default target
 all: build
@@ -24,12 +24,17 @@ clean:
 	@rm -f demo/SentryGameMaker/extensions/Sentry/crashpad_handler
 	@echo "✅ Clean complete!"
 
+# Sync changes from demo back to src
+sync:
+	@./scripts/sync-from-demo.sh
+
 # Help target
 help:
 	@echo "Available targets:"
 	@echo "  build      - Build the GameMaker extension (default)"
 	@echo "  extension  - Build the GameMaker extension"
 	@echo "  clean      - Clean build files and extension outputs"
+	@echo "  sync       - Sync changes from demo back to src folder"
 	@echo "  help       - Show this help message"
 	@echo ""
 	@echo "Output files:"

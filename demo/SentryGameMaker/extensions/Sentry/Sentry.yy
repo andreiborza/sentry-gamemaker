@@ -52,6 +52,7 @@
   "options":[
     {"$GMExtensionOption":"","%Name":"DSN","defaultValue":"","description":"","displayName":"","exportToINI":false,"extensionId":null,"guid":"26ab4663-89aa-490f-8659-3c5089c77e4e","hidden":false,"listItems":[],"name":"DSN","optType":2,"resourceType":"GMExtensionOption","resourceVersion":"2.0",},
     {"$GMExtensionOption":"","%Name":"debug","defaultValue":"False","description":"","displayName":"","exportToINI":false,"extensionId":null,"guid":"d8421735-f0d3-445c-a831-aa1f9f7b3b75","hidden":false,"listItems":[],"name":"debug","optType":0,"resourceType":"GMExtensionOption","resourceVersion":"2.0",},
+    {"$GMExtensionOption":"","%Name":"setup_exception_handler","defaultValue":"True","description":"","displayName":"","exportToINI":false,"extensionId":null,"guid":"6db54f2a-662f-495c-b251-a9b90a28beb9","hidden":false,"listItems":[],"name":"setup_exception_handler","optType":0,"resourceType":"GMExtensionOption","resourceVersion":"2.0",},
   ],
   "optionsFile":"options.json",
   "packageId":"",
