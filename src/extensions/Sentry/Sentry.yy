@@ -1,6 +1,6 @@
 {
   "$GMExtension":"",
-  "%Name":"sentry_gamemaker",
+  "%Name":"Sentry",
   "androidactivityinject":null,
   "androidclassname":"",
   "androidcodeinjection":"",
@@ -25,7 +25,7 @@
         {"$GMExtensionFunction":"","%Name":"sentry_close","argCount":0,"args":[],"documentation":"Close Sentry and cleanup resources","externalName":"sentry_gm_close","help":"sentry_close()","hidden":false,"kind":11,"name":"sentry_close","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":2,},
       ],"init":"","kind":1,"name":"","order":[],"origname":"","ProxyFiles":[],"resourceType":"GMExtensionFile","resourceVersion":"2.0","uncompress":false,"usesRunnerInterface":true,},
     {"$GMExtensionFile":"","%Name":"","constants":[],"copyToTargets":-1,"filename":"crashpad_handler","final":"","functions":[],"init":"","kind":4,"name":"","order":[],"origname":"","ProxyFiles":[],"resourceType":"GMExtensionFile","resourceVersion":"2.0","uncompress":false,"usesRunnerInterface":true,},
-    {"$GMExtensionFile":"","%Name":"","constants":[],"copyToTargets":-1,"filename":"sentry_exception_handler.gml","final":"","functions":[
+    {"$GMExtensionFile":"","%Name":"","constants":[],"copyToTargets":-1,"filename":"sentry.gml","final":"","functions":[
         {"$GMExtensionFunction":"","%Name":"sentry_exception_handler","argCount":0,"args":[],"documentation":"/// @description Sentry exception handler for GameMaker - call with exception_unhandled_handler(sentry_exception_handler)\n/// @param {Struct} exception_struct The exception struct from GameMaker's exception_unhandled_handler\n/// @returns {Real} Always returns 0 to indicate handler completion","externalName":"sentry_exception_handler","help":"","hidden":false,"kind":2,"name":"sentry_exception_handler","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":1,},
       ],"init":"","kind":2,"name":"","order":[],"origname":"","ProxyFiles":[],"resourceType":"GMExtensionFile","resourceVersion":"2.0","uncompress":false,"usesRunnerInterface":true,},
   ],
@@ -48,7 +48,7 @@
   "maccompilerflags":"",
   "maclinkerflags":"",
   "macsourcedir":"",
-  "name":"sentry_gamemaker",
+  "name":"Sentry",
   "options":[
     {"$GMExtensionOption":"","%Name":"DSN","defaultValue":"","description":"","displayName":"","exportToINI":false,"extensionId":null,"guid":"26ab4663-89aa-490f-8659-3c5089c77e4e","hidden":false,"listItems":[],"name":"DSN","optType":2,"resourceType":"GMExtensionOption","resourceVersion":"2.0",},
     {"$GMExtensionOption":"","%Name":"debug","defaultValue":"False","description":"","displayName":"","exportToINI":false,"extensionId":null,"guid":"d8421735-f0d3-445c-a831-aa1f9f7b3b75","hidden":false,"listItems":[],"name":"debug","optType":0,"resourceType":"GMExtensionOption","resourceVersion":"2.0",},

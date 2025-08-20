@@ -35,7 +35,7 @@
   },
   "name":"SentryGameMaker",
   "resources":[
-    {"id":{"name":"sentry_gamemaker","path":"extensions/sentry_gamemaker/sentry_gamemaker.yy",},},
+    {"id":{"name":"Sentry","path":"extensions/Sentry/Sentry.yy",},},
     {"id":{"name":"LINK_TO_TUTORIALS","path":"notes/LINK_TO_TUTORIALS/LINK_TO_TUTORIALS.yy",},},
     {"id":{"name":"GameController","path":"objects/GameController/GameController.yy",},},
     {"id":{"name":"obj_asteroid","path":"objects/obj_asteroid/obj_asteroid.yy",},},

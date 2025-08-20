@@ -43,14 +43,14 @@ endif()
 
 # Copy extension files from src to demo project
 add_custom_command(TARGET sentry_gm POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "Copying sentry_gamemaker extension to demo project..."
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying Sentry extension to demo project..."
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/extensions/sentry_gamemaker"
-        "${CMAKE_CURRENT_SOURCE_DIR}/demo/SentryGameMaker/extensions/sentry_gamemaker"
-    COMMAND ${CMAKE_COMMAND} -E echo "Copying sentry_gamemaker.json to demo project..."
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/extensions/Sentry"
+        "${CMAKE_CURRENT_SOURCE_DIR}/demo/SentryGameMaker/extensions/Sentry"
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying Sentry.json to demo project..."
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/options/extensions/sentry_gamemaker.json"
-        "${CMAKE_CURRENT_SOURCE_DIR}/demo/SentryGameMaker/options/extensions/sentry_gamemaker.json"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/options/extensions/Sentry.json"
+        "${CMAKE_CURRENT_SOURCE_DIR}/demo/SentryGameMaker/options/extensions/Sentry.json"
     COMMENT "Copying extension files to demo project"
 )
 
@@ -59,7 +59,7 @@ add_custom_command(TARGET sentry_gm POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E echo "Copying libsentry_gm.dylib to SentryGameMaker..."
     COMMAND ${CMAKE_COMMAND} -E copy
         $<TARGET_FILE:sentry_gm>
-        "${CMAKE_CURRENT_SOURCE_DIR}/demo/SentryGameMaker/extensions/sentry_gamemaker/libsentry_gm.dylib"
+        "${CMAKE_CURRENT_SOURCE_DIR}/demo/SentryGameMaker/extensions/Sentry/libsentry_gm.dylib"
     COMMENT "Copying dylib to SentryGameMaker extension directory"
 )
 
@@ -67,7 +67,7 @@ add_custom_command(TARGET sentry_gm POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E echo "Copying crashpad_handler to SentryGameMaker..."
     COMMAND ${CMAKE_COMMAND} -E copy
         "${SENTRY_NATIVE_DIR}/bin/crashpad_handler"
-        "${CMAKE_CURRENT_SOURCE_DIR}/demo/SentryGameMaker/extensions/sentry_gamemaker/crashpad_handler"
+        "${CMAKE_CURRENT_SOURCE_DIR}/demo/SentryGameMaker/extensions/Sentry/crashpad_handler"
     COMMENT "Copying crashpad_handler to SentryGameMaker extension directory"
 )
 
