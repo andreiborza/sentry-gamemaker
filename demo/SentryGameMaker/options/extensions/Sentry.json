@@ -1,8 +1,16 @@
 {
   "$GMExtensionConfigSet": "GMExtensionConfigSet",
   "configurables": {
-    "26ab4663-89aa-490f-8659-3c5089c77e4e": null,
-    "d8421735-f0d3-445c-a831-aa1f9f7b3b75": null,
+    "26ab4663-89aa-490f-8659-3c5089c77e4e": {
+      "Default": {
+        "value": "https://36b59e45df048abbe20b7af6cdf76844@o447951.ingest.us.sentry.io/4509864179466240"
+      }
+    },
+    "d8421735-f0d3-445c-a831-aa1f9f7b3b75": {
+      "Default": {
+        "value": "True"
+      }
+    },
     "6db54f2a-662f-495c-b251-a9b90a28beb9": null
   }
 }

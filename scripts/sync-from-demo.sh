@@ -15,12 +15,5 @@ else
     echo "⚠️  Warning: $DEMO_DIR/extensions/Sentry/Sentry.yy not found"
 fi
 
-# Sync Sentry.json options file
-if [ -f "$DEMO_DIR/options/extensions/Sentry.json" ]; then
-    echo "⚙️  Syncing $DEMO_DIR/options/extensions/Sentry.json -> $SRC_DIR/options/extensions/Sentry.json"
-    cp "$DEMO_DIR/options/extensions/Sentry.json" "$SRC_DIR/options/extensions/Sentry.json"
-else
-    echo "⚠️  Warning: $DEMO_DIR/options/extensions/Sentry.json not found"
-fi
 
 echo "✅ Sync complete!"
