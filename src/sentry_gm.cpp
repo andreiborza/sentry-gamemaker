@@ -11,6 +11,7 @@
 #include <dlfcn.h>
 #include <libgen.h>
 #include <vector>
+#include <nlohmann/json.hpp>
 
 
 extern "C" {
@@ -249,110 +250,10 @@ double sentry_gm_exception_handler(const char* json_exception_data) {
     }
 }
 
-// Capture an exception event from GML exception handler
-double sentry_gm_capture_exception(const char* message, const char* stack_trace, const char* script_name, double line_number) {
-    log_debug("Capturing exception...");
-    log_debug("Message: " + std::string(message ? message : "NULL"));
-    log_debug("Stack trace: " + std::string(stack_trace ? stack_trace : "NULL"));
-    log_debug("Script: " + std::string(script_name ? script_name : "NULL"));
-    log_debug("Line: " + std::to_string((int)line_number));
-    
-    if (!message) {
-        log_debug("ERROR: Message is NULL");
-        return -1.0;
-    }
-    
-    try {
-        // Follow official Sentry Native documentation pattern
-        log_debug("Creating event using official Sentry Native pattern...");
-        sentry_value_t event = sentry_value_new_event();
-        if (sentry_value_is_null(event)) {
-            log_debug("ERROR: Failed to create event");
-            return -1.0;
-        }
-        
-        // Create exception with type and message
-        log_debug("Creating exception object...");
-        sentry_value_t exc = sentry_value_new_exception("GameMakerException", message);
-        if (sentry_value_is_null(exc)) {
-            log_debug("ERROR: Failed to create exception object");
-            return -1.0;
-        }
-        
-        // Create and attach stacktrace if we have stack trace data
-        if (stack_trace && strlen(stack_trace) > 0) {
-            log_debug("Creating stacktrace using sentry_value_new_stacktrace...");
-            
-            // Use sentry_value_new_stacktrace to create proper stacktrace
-            sentry_value_t stacktrace = sentry_value_new_stacktrace(NULL, 0);
-            if (!sentry_value_is_null(stacktrace)) {
-                // Get the frames list from the stacktrace
-                sentry_value_t frames = sentry_value_get_by_key(stacktrace, "frames");
-                if (!sentry_value_is_null(frames)) {
-                    // Create a frame based on our GML data
-                    sentry_value_t frame = sentry_value_new_object();
-                    
-                    if (script_name && strlen(script_name) > 0) {
-                        sentry_value_set_by_key(frame, "filename", sentry_value_new_string(script_name));
-                        sentry_value_set_by_key(frame, "function", sentry_value_new_string(script_name));
-                    }
-                    
-                    if (line_number > 0) {
-                        sentry_value_set_by_key(frame, "lineno", sentry_value_new_int32((int32_t)line_number));
-                    }
-                    
-                    // Mark as application code
-                    sentry_value_set_by_key(frame, "in_app", sentry_value_new_bool(true));
-                    
-                    // Add the stack trace line as context
-                    sentry_value_set_by_key(frame, "context_line", sentry_value_new_string(stack_trace));
-                    
-                    // Add frame to the stacktrace
-                    sentry_value_append(frames, frame);
-                    
-                    log_debug("Stacktrace created successfully");
-                }
-                
-                // Attach stacktrace to exception using the official method
-                sentry_value_set_stacktrace(exc, NULL, 0);
-                // Then manually set our custom stacktrace
-                sentry_value_set_by_key(exc, "stacktrace", stacktrace);
-            }
-        }
-        
-        // Add exception to event using official method
-        log_debug("Adding exception to event...");
-        sentry_event_add_exception(event, exc);
-        
-        // Add tags for easier filtering
-        sentry_value_t tags = sentry_value_new_object();
-        sentry_value_set_by_key(tags, "engine", sentry_value_new_string("GameMaker"));
-        if (script_name) {
-            sentry_value_set_by_key(tags, "script", sentry_value_new_string(script_name));
-        }
-        sentry_value_set_by_key(event, "tags", tags);
-        log_debug("Exception event created using official Sentry Native pattern");
-        
-        log_debug("Capturing exception event...");
-        sentry_uuid_t uuid = sentry_capture_event(event);
-        
-        bool is_nil = sentry_uuid_is_nil(&uuid);
-        log_debug("Exception captured, UUID is " + std::string(is_nil ? "NIL" : "valid"));
-        
-        // Event sent asynchronously
-        log_debug("Exception event captured");
-        
-        return is_nil ? 0.0 : 1.0;
-        
-    } catch (...) {
-        log_debug("ERROR: Exception occurred during sentry_capture_exception");
-        return -1.0;
-    }
-}
 
-// Capture exception from JSON string containing full GameMaker exception struct
-double sentry_gm_capture_exception_json(const char* exception_json) {
-    log_debug("Capturing exception from JSON...");
+// Capture exception from GameMaker exception struct (JSON)
+double sentry_gm_capture_exception(const char* exception_json) {
+    log_debug("Capturing exception from GameMaker exception struct...");
     log_debug("Exception JSON: " + std::string(exception_json ? exception_json : "NULL"));
     
     if (!exception_json) {
@@ -360,55 +261,27 @@ double sentry_gm_capture_exception_json(const char* exception_json) {
         return -1.0;
     }
     
+    using json = nlohmann::json;
+    using json_parse_error = nlohmann::json::parse_error;
+    
     try {
-        // For now, we'll do simple string parsing since we don't have a JSON library
-        // We'll extract the key fields manually
-        std::string json_str(exception_json);
         
-        std::string message = "";
-        std::string long_message = "";
-        std::string script = "";
-        int line_number = -1;
+        // Parse the JSON exception struct
+        json exception_data = json::parse(exception_json);
+        
+        // Extract fields from GameMaker exception struct
+        std::string message = exception_data.value("message", "");
+        std::string long_message = exception_data.value("longMessage", "");
+        std::string script = exception_data.value("script", "");
+        int line_number = exception_data.value("line", -1);
+        
+        // Extract stacktrace array if present
         std::vector<std::string> stacktrace_frames;
-        
-        // Simple JSON parsing for message
-        size_t msg_start = json_str.find("\"message\":\"");
-        if (msg_start != std::string::npos) {
-            msg_start += 11; // Length of "message":"
-            size_t msg_end = json_str.find("\"", msg_start);
-            if (msg_end != std::string::npos) {
-                message = json_str.substr(msg_start, msg_end - msg_start);
-            }
-        }
-        
-        // Simple JSON parsing for longMessage
-        size_t long_msg_start = json_str.find("\"longMessage\":\"");
-        if (long_msg_start != std::string::npos) {
-            long_msg_start += 15; // Length of "longMessage":"
-            size_t long_msg_end = json_str.find("\"", long_msg_start);
-            if (long_msg_end != std::string::npos) {
-                long_message = json_str.substr(long_msg_start, long_msg_end - long_msg_start);
-            }
-        }
-        
-        // Simple JSON parsing for script
-        size_t script_start = json_str.find("\"script\":\"");
-        if (script_start != std::string::npos) {
-            script_start += 10; // Length of "script":"
-            size_t script_end = json_str.find("\"", script_start);
-            if (script_end != std::string::npos) {
-                script = json_str.substr(script_start, script_end - script_start);
-            }
-        }
-        
-        // Simple JSON parsing for line number
-        size_t line_start = json_str.find("\"line\":");
-        if (line_start != std::string::npos) {
-            line_start += 7; // Length of "line":
-            size_t line_end = json_str.find_first_of(",}", line_start);
-            if (line_end != std::string::npos) {
-                std::string line_str = json_str.substr(line_start, line_end - line_start);
-                line_number = std::stoi(line_str);
+        if (exception_data.contains("stacktrace") && exception_data["stacktrace"].is_array()) {
+            for (const auto& frame : exception_data["stacktrace"]) {
+                if (frame.is_string()) {
+                    stacktrace_frames.push_back(frame.get<std::string>());
+                }
             }
         }
         
@@ -416,11 +289,18 @@ double sentry_gm_capture_exception_json(const char* exception_json) {
         log_debug("Parsed - Long message: " + long_message);
         log_debug("Parsed - Script: " + script);
         log_debug("Parsed - Line: " + std::to_string(line_number));
+        log_debug("Parsed - Stacktrace frames: " + std::to_string(stacktrace_frames.size()));
         
-        // Use longMessage as the main message (more detailed)
-        std::string final_message = long_message.empty() ? message : long_message;
+        // Use message as exception type, longMessage as exception value
+        std::string exception_type = message.empty() ? "GameMakerException" : message;
+        std::string exception_value = long_message.empty() ? message : long_message;
         
-        // Follow official Sentry Native documentation pattern
+        if (exception_value.empty()) {
+            log_debug("ERROR: No exception message available in exception data");
+            return -1.0;
+        }
+        
+        // Create Sentry event following official documentation pattern
         log_debug("Creating event using official Sentry Native pattern...");
         sentry_value_t event = sentry_value_new_event();
         if (sentry_value_is_null(event)) {
@@ -428,32 +308,55 @@ double sentry_gm_capture_exception_json(const char* exception_json) {
             return -1.0;
         }
         
-        // Create exception with type and message
+        // Create exception with type from message and value from longMessage
         log_debug("Creating exception object...");
-        sentry_value_t exc = sentry_value_new_exception("GameMakerException", final_message.c_str());
+        log_debug("Exception type: " + exception_type);
+        log_debug("Exception value: " + exception_value);
+        sentry_value_t exc = sentry_value_new_exception(exception_type.c_str(), exception_value.c_str());
         if (sentry_value_is_null(exc)) {
             log_debug("ERROR: Failed to create exception object");
             return -1.0;
         }
         
-        // Create stacktrace with the script and line info we have
-        if (!script.empty()) {
-            log_debug("Creating stacktrace using sentry_value_new_stacktrace...");
+        // Create stacktrace if we have frame data
+        if (!stacktrace_frames.empty() || (!script.empty() && line_number > 0)) {
+            log_debug("Creating stacktrace...");
             
             sentry_value_t stacktrace = sentry_value_new_stacktrace(NULL, 0);
             if (!sentry_value_is_null(stacktrace)) {
                 sentry_value_t frames = sentry_value_get_by_key(stacktrace, "frames");
                 if (!sentry_value_is_null(frames)) {
-                    // Create a frame based on our parsed data
-                    sentry_value_t frame = sentry_value_new_object();
-                    
-                    sentry_value_set_by_key(frame, "filename", sentry_value_new_string(script.c_str()));
-                    sentry_value_set_by_key(frame, "function", sentry_value_new_string(script.c_str()));
-                    sentry_value_set_by_key(frame, "lineno", sentry_value_new_int32((int32_t)line_number));
-                    sentry_value_set_by_key(frame, "in_app", sentry_value_new_bool(true));
-                    
-                    // Add frame to the stacktrace
-                    sentry_value_append(frames, frame);
+                    // If we have explicit stacktrace frames, use them
+                    if (!stacktrace_frames.empty()) {
+                        for (size_t i = 0; i < stacktrace_frames.size(); ++i) {
+                            sentry_value_t frame = sentry_value_new_object();
+                            
+                            // Try to parse each frame string for useful info
+                            const std::string& frame_str = stacktrace_frames[i];
+                            sentry_value_set_by_key(frame, "function", sentry_value_new_string(frame_str.c_str()));
+                            sentry_value_set_by_key(frame, "in_app", sentry_value_new_bool(true));
+                            
+                            // Set script and line for the top frame if available
+                            if (i == 0 && !script.empty()) {
+                                sentry_value_set_by_key(frame, "filename", sentry_value_new_string(script.c_str()));
+                                if (line_number > 0) {
+                                    sentry_value_set_by_key(frame, "lineno", sentry_value_new_int32((int32_t)line_number));
+                                }
+                            }
+                            
+                            sentry_value_append(frames, frame);
+                        }
+                    } else {
+                        // Create a single frame from script/line data
+                        sentry_value_t frame = sentry_value_new_object();
+                        
+                        sentry_value_set_by_key(frame, "filename", sentry_value_new_string(script.c_str()));
+                        sentry_value_set_by_key(frame, "function", sentry_value_new_string(script.c_str()));
+                        sentry_value_set_by_key(frame, "lineno", sentry_value_new_int32((int32_t)line_number));
+                        sentry_value_set_by_key(frame, "in_app", sentry_value_new_bool(true));
+                        
+                        sentry_value_append(frames, frame);
+                    }
                     
                     log_debug("Stacktrace created successfully");
                 }
@@ -464,7 +367,7 @@ double sentry_gm_capture_exception_json(const char* exception_json) {
             }
         }
         
-        // Add exception to event using official method
+        // Add exception to event
         log_debug("Adding exception to event...");
         sentry_event_add_exception(event, exc);
         
@@ -475,21 +378,28 @@ double sentry_gm_capture_exception_json(const char* exception_json) {
             sentry_value_set_by_key(tags, "script", sentry_value_new_string(script.c_str()));
         }
         sentry_value_set_by_key(event, "tags", tags);
+        
+        // Add the raw exception data as context for debugging
+        sentry_value_t extra = sentry_value_new_object();
+        sentry_value_set_by_key(extra, "gamemaker_exception_raw", sentry_value_new_string(exception_json));
+        sentry_value_set_by_key(event, "extra", extra);
+        
         log_debug("Exception event created using official Sentry Native pattern");
         
+        // Capture the event
         log_debug("Capturing exception event...");
         sentry_uuid_t uuid = sentry_capture_event(event);
         
         bool is_nil = sentry_uuid_is_nil(&uuid);
         log_debug("Exception captured, UUID is " + std::string(is_nil ? "NIL" : "valid"));
         
-        // Event sent asynchronously
-        log_debug("Exception event captured");
-        
         return is_nil ? 0.0 : 1.0;
         
+    } catch (const json_parse_error& e) {
+        log_debug("ERROR: JSON parse error: " + std::string(e.what()));
+        return -1.0;
     } catch (...) {
-        log_debug("ERROR: Exception occurred during JSON exception capture");
+        log_debug("ERROR: Exception occurred during exception capture");
         return -1.0;
     }
 }

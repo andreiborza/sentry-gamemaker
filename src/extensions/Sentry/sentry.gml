@@ -10,8 +10,8 @@ try {
 
     show_debug_message("Capturing exception json: " + exception_json);
     
-    // Send to Sentry using the JSON capture function
-    var result = sentry_capture_exception_json(exception_json);
+    // Send to Sentry using the new unified capture function
+    var result = sentry_capture_exception(exception_json);
     
     // Optional: Log for debugging (can be removed in production)
     show_debug_message("Sentry: Exception captured, result: " + string(result));

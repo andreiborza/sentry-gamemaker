@@ -4,6 +4,16 @@ project(SentryGameMaker)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Add nlohmann/json
+include(FetchContent)
+FetchContent_Declare(nlohmann_json
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
+  GIT_TAG v3.11.3
+  GIT_SHALLOW TRUE
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(nlohmann_json)
+
 # Set paths to sentry-native
 set(SENTRY_NATIVE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/sentry-native")
 set(SENTRY_INCLUDE_DIR "${SENTRY_NATIVE_DIR}/include")
@@ -29,7 +39,7 @@ target_include_directories(sentry_gm PRIVATE ${SENTRY_INCLUDE_DIR})
 
 
 # Link libraries for extension
-target_link_libraries(sentry_gm ${SENTRY_LIB})
+target_link_libraries(sentry_gm ${SENTRY_LIB} nlohmann_json::nlohmann_json)
 
 # For macOS, we need to set the rpath to find the dylib
 if(APPLE)
