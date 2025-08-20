@@ -559,8 +559,9 @@ double sentry_gm_capture_exception(const char* exception_json, double handled) {
                         sentry_value_set_by_key(frame, "context_line", sentry_value_new_string(context_line.c_str()));
                     }
                     
-                    // Mark as application code
+                    // Mark as application code and set platform
                     sentry_value_set_by_key(frame, "in_app", sentry_value_new_bool(true));
+                    sentry_value_set_by_key(frame, "platform", sentry_value_new_string("gml"));
                     
                     return frame;
                 };
