@@ -1,4 +1,4 @@
-.PHONY: all build extension clean sync help
+.PHONY: all build extension clean sync copy-extensions help
 
 # Default target
 all: build
@@ -7,7 +7,7 @@ all: build
 build: extension
 
 # Build the extension (main target)
-extension:
+extension: copy-extensions
 	@echo "Building Sentry GameMaker Extension..."
 	@mkdir -p build
 	@cd build && cmake ..
@@ -15,6 +15,13 @@ extension:
 	@echo "✅ Extension built successfully!"
 	@echo "📁 Library: demo/SentryGameMaker/extensions/Sentry/libsentry_gm.dylib"
 	@echo "📁 Handler: demo/SentryGameMaker/extensions/Sentry/crashpad_handler"
+
+# Copy extension files from src to demo (always runs)
+copy-extensions:
+	@echo "Copying Sentry extension files to demo project..."
+	@mkdir -p demo/SentryGameMaker/extensions/Sentry
+	@cp -r src/extensions/Sentry/* demo/SentryGameMaker/extensions/Sentry/
+	@echo "✅ Extension files copied successfully!"
 
 # Clean build files and extension outputs  
 clean:
@@ -31,11 +38,12 @@ sync:
 # Help target
 help:
 	@echo "Available targets:"
-	@echo "  build      - Build the GameMaker extension (default)"
-	@echo "  extension  - Build the GameMaker extension"
-	@echo "  clean      - Clean build files and extension outputs"
-	@echo "  sync       - Sync changes from demo back to src folder"
-	@echo "  help       - Show this help message"
+	@echo "  build           - Build the GameMaker extension (default)"
+	@echo "  extension       - Build the GameMaker extension"
+	@echo "  copy-extensions - Copy extension files from src to demo (without building)"
+	@echo "  clean           - Clean build files and extension outputs"
+	@echo "  sync            - Sync changes from demo back to src folder"
+	@echo "  help            - Show this help message"
 	@echo ""
 	@echo "Output files:"
 	@echo "  demo/SentryGameMaker/extensions/Sentry/libsentry_gm.dylib  - GameMaker extension library"

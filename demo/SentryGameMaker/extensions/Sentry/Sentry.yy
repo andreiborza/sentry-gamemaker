@@ -27,8 +27,8 @@
     {"$GMExtensionFile":"","%Name":"","constants":[],"copyToTargets":-1,"filename":"crashpad_handler","final":"","functions":[],"init":"","kind":4,"name":"","order":[],"origname":"","ProxyFiles":[],"resourceType":"GMExtensionFile","resourceVersion":"2.0","uncompress":false,"usesRunnerInterface":true,},
     {"$GMExtensionFile":"","%Name":"","constants":[],"copyToTargets":-1,"filename":"sentry.gml","final":"","functions":[
         {"$GMExtensionFunction":"","%Name":"sentry_exception_handler","argCount":0,"args":[],"documentation":"/// @description Sentry exception handler for GameMaker - call with exception_unhandled_handler(sentry_exception_handler)\n/// @param {Struct} exception_struct The exception struct from GameMaker's exception_unhandled_handler\n/// @returns {Real} Always returns 0 to indicate handler completion","externalName":"sentry_exception_handler","help":"","hidden":false,"kind":2,"name":"sentry_exception_handler","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":1,},
-        {"$GMExtensionFunction":"","%Name":"sentry_foo","argCount":0,"args":[],"documentation":"","externalName":"sentry_foo","help":"","hidden":false,"kind":2,"name":"sentry_foo","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":1,},
-      ],"init":"","kind":2,"name":"","order":[],"origname":"","ProxyFiles":[],"resourceType":"GMExtensionFile","resourceVersion":"2.0","uncompress":false,"usesRunnerInterface":true,},
+        {"$GMExtensionFunction":"","%Name":"sentry_auto_init","argCount":0,"args":[],"documentation":"","externalName":"sentry_auto_init","help":"","hidden":false,"kind":2,"name":"sentry_auto_init","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":1,},
+      ],"init":"sentry_auto_init","kind":2,"name":"","order":[],"origname":"","ProxyFiles":[],"resourceType":"GMExtensionFile","resourceVersion":"2.0","uncompress":false,"usesRunnerInterface":true,},
   ],
   "gradleinject":null,
   "hasConvertedCodeInjection":true,

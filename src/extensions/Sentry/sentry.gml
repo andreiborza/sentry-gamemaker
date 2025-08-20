@@ -27,4 +27,11 @@ try {
     return 0;
 }
 
-#define other_function
+#define sentry_auto_init
+var options = extension_get_options("Sentry");
+var dsn = options.DSN;
+var debug = options.debug;
+
+if (debug) {
+    show_debug_message("[SENTRY] Auto-initializing Sentry with DSN: " + dsn);
+}
