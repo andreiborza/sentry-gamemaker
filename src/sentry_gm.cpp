@@ -227,10 +227,6 @@ double sentry_gm_exception_handler(const char* json_exception_data) {
             return 0.0;
         }
         
-        // Add the raw exception data as extra context
-        sentry_value_t extra = sentry_value_new_object();
-        sentry_value_set_by_key(extra, "gamemaker_exception", sentry_value_new_string(json_str.c_str()));
-        sentry_value_set_by_key(event, "extra", extra);
         
         log_debug("Capturing exception event...");
         sentry_uuid_t uuid = sentry_capture_event(event);
@@ -252,9 +248,11 @@ double sentry_gm_exception_handler(const char* json_exception_data) {
 
 
 // Capture exception from GameMaker exception struct (JSON)
-double sentry_gm_capture_exception(const char* exception_json) {
+double sentry_gm_capture_exception(const char* exception_json, double handled) {
     log_debug("Capturing exception from GameMaker exception struct...");
     log_debug("Exception JSON: " + std::string(exception_json ? exception_json : "NULL"));
+    log_debug("Raw handled parameter: " + std::to_string(handled));
+    log_debug("Handled flag (boolean): " + std::to_string(handled != 0 ? 1 : 0));
     
     if (!exception_json) {
         log_debug("ERROR: Exception JSON is NULL");
@@ -317,6 +315,15 @@ double sentry_gm_capture_exception(const char* exception_json) {
             log_debug("ERROR: Failed to create exception object");
             return -1.0;
         }
+        
+        // Set mechanism following sentry-native pattern
+        sentry_value_t mechanism = sentry_value_new_object();
+        sentry_value_set_by_key(mechanism, "type", sentry_value_new_string("gamemaker"));
+        sentry_value_set_by_key(mechanism, "handled", sentry_value_new_bool(handled != 0.0));
+        sentry_value_set_by_key(mechanism, "synthetic", sentry_value_new_bool(false));
+        sentry_value_set_by_key(exc, "mechanism", mechanism);
+        
+        log_debug("Mechanism created - type: gamemaker, handled: " + std::string(handled != 0.0 ? "true" : "false") + ", synthetic: false");
         
         // Create stacktrace if we have frame data - only use GML frames, not native C++ frames
         if (!stacktrace_frames.empty() || (!script.empty() && line_number > 0)) {
@@ -384,10 +391,6 @@ double sentry_gm_capture_exception(const char* exception_json) {
         }
         sentry_value_set_by_key(event, "tags", tags);
         
-        // Add the raw exception data as context for debugging
-        sentry_value_t extra = sentry_value_new_object();
-        sentry_value_set_by_key(extra, "gamemaker_exception_raw", sentry_value_new_string(exception_json));
-        sentry_value_set_by_key(event, "extra", extra);
         
         log_debug("Exception event created using official Sentry Native pattern");
         
