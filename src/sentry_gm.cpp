@@ -11,6 +11,7 @@
 #include <dlfcn.h>
 #include <libgen.h>
 #include <vector>
+#include <regex>
 #include <nlohmann/json.hpp>
 
 
@@ -298,6 +299,39 @@ double sentry_gm_capture_exception(const char* exception_json, double handled) {
             return -1.0;
         }
         
+        // Clean up exception_value after stacktrace parsing - remove redundant info
+        // Remove the stacktrace line that starts with " at gml_" since we have proper stacktrace now
+        size_t at_pos = exception_value.find("\n at gml_");
+        if (at_pos != std::string::npos) {
+            // Find the end of this line and remove it
+            size_t line_end = exception_value.find('\n', at_pos + 1);
+            if (line_end != std::string::npos) {
+                exception_value.erase(at_pos, line_end - at_pos);
+            } else {
+                // Line goes to end of string
+                exception_value.erase(at_pos);
+            }
+        }
+        
+        // Replace multiple newlines with single spaces to make it more readable
+        std::regex newline_regex(R"(\s*\n\s*)");
+        exception_value = std::regex_replace(exception_value, newline_regex, " ");
+        
+        // Clean up any extra whitespace
+        std::regex whitespace_regex(R"(\s+)");
+        exception_value = std::regex_replace(exception_value, whitespace_regex, " ");
+        
+        // Trim leading/trailing whitespace
+        size_t start = exception_value.find_first_not_of(" \t");
+        if (start != std::string::npos) {
+            size_t end = exception_value.find_last_not_of(" \t");
+            exception_value = exception_value.substr(start, end - start + 1);
+        } else {
+            exception_value = ""; // String was all whitespace
+        }
+        
+        log_debug("Cleaned exception value: " + exception_value);
+        
         // Create Sentry event following official documentation pattern
         log_debug("Creating event using official Sentry Native pattern...");
         sentry_value_t event = sentry_value_new_event();
@@ -318,7 +352,7 @@ double sentry_gm_capture_exception(const char* exception_json, double handled) {
         
         // Set mechanism following sentry-native pattern
         sentry_value_t mechanism = sentry_value_new_object();
-        sentry_value_set_by_key(mechanism, "type", sentry_value_new_string("gamemaker"));
+        sentry_value_set_by_key(mechanism, "type", sentry_value_new_string("generic"));
         sentry_value_set_by_key(mechanism, "handled", sentry_value_new_bool(handled != 0.0));
         sentry_value_set_by_key(mechanism, "synthetic", sentry_value_new_bool(false));
         sentry_value_set_by_key(exc, "mechanism", mechanism);
@@ -334,26 +368,209 @@ double sentry_gm_capture_exception(const char* exception_json, double handled) {
             sentry_value_t frames = sentry_value_new_list();
             
             if (!sentry_value_is_null(stacktrace) && !sentry_value_is_null(frames)) {
-                // If we have explicit stacktrace frames, use them
-                if (!stacktrace_frames.empty()) {
-                    log_debug("Processing " + std::to_string(stacktrace_frames.size()) + " GML stacktrace frames");
-                    for (size_t i = 0; i < stacktrace_frames.size(); ++i) {
-                        const std::string& frame_str = stacktrace_frames[i];
+                // Helper function to parse GameMaker frame string following gmlogging-suite approach
+                auto parseGMLFrame = [&](const std::string& frame_str, bool is_top_frame) -> sentry_value_t {
+                    sentry_value_t frame = sentry_value_new_object();
+                    
+                    std::string function_name = "";
+                    std::string filename = "";
+                    int lineno = -1;
+                    std::string context_line = "";
+                    
+                    // Parse format: "function_name (line X) - \tcontext_code"
+                    // Based on gmlogging-suite parsing logic
+                    
+                    size_t line_pos = frame_str.find(" (line ");
+                    if (line_pos != std::string::npos) {
+                        // Extract function name before " (line "
+                        std::string location_part = frame_str.substr(0, line_pos);
                         
-                        sentry_value_t frame = sentry_value_new_object();
-                        
-                        // Parse GML frame string for useful info
-                        sentry_value_set_by_key(frame, "function", sentry_value_new_string(frame_str.c_str()));
-                        sentry_value_set_by_key(frame, "in_app", sentry_value_new_bool(true));
-                        
-                        // Set script and line for the top frame if available
-                        if (i == 0 && !script.empty()) {
-                            sentry_value_set_by_key(frame, "filename", sentry_value_new_string(script.c_str()));
-                            if (line_number > 0) {
-                                sentry_value_set_by_key(frame, "lineno", sentry_value_new_int32((int32_t)line_number));
+                        // Find closing parenthesis after line number
+                        size_t line_end = frame_str.find(")", line_pos);
+                        if (line_end != std::string::npos) {
+                            // Extract line number
+                            std::string line_str = frame_str.substr(line_pos + 7, line_end - line_pos - 7);
+                            try {
+                                lineno = std::stoi(line_str);
+                            } catch (...) {}
+                            
+                            // Extract context line after closing parenthesis and optional " - "
+                            size_t context_start = line_end + 1;
+                            if (context_start < frame_str.length()) {
+                                std::string remaining = frame_str.substr(context_start);
+                                
+                                // Skip " - " if present
+                                if (remaining.find(" - ") == 0) {
+                                    remaining = remaining.substr(3);
+                                }
+                                
+                                // Clean up leading/trailing whitespace and tabs
+                                size_t first_char = remaining.find_first_not_of(" \t");
+                                if (first_char != std::string::npos) {
+                                    context_line = remaining.substr(first_char);
+                                    // Remove trailing whitespace
+                                    size_t last_char = context_line.find_last_not_of(" \t\r\n");
+                                    if (last_char != std::string::npos) {
+                                        context_line = context_line.substr(0, last_char + 1);
+                                    }
+                                }
                             }
                         }
                         
+                        // Parse the location part to extract clean function and filename
+                        // Handle format: "gml_Script_function@gml_Object_object" or "gml_Object_object"
+                        try {
+                            std::regex gml_regex(R"(^gml_(Script|Object)_(.+?)(?:@gml_(Script|Object)_(.+?))?$)");
+                            std::smatch gml_matches;
+                            
+                            if (std::regex_match(location_part, gml_matches, gml_regex)) {
+                                std::string first_type = gml_matches[1].str();
+                                std::string first_name = gml_matches[2].str();
+                                
+                                if (gml_matches[3].matched && gml_matches[4].matched) {
+                                    // Format: gml_Script_function@gml_Object_object
+                                    std::string second_name = gml_matches[4].str();
+                                    function_name = first_name;
+                                    filename = second_name;
+                                } else {
+                                    // Format: gml_Object_object or gml_Script_function
+                                    if (first_type == "Script") {
+                                        function_name = first_name;
+                                        filename = first_name;
+                                    } else { // Object
+                                        filename = first_name;
+                                        function_name = "Event";
+                                    }
+                                }
+                            } else {
+                                // Fallback: use raw location
+                                function_name = location_part;
+                                filename = location_part;
+                            }
+                        } catch (const std::regex_error& e) {
+                            log_debug("Regex error parsing location: " + std::string(e.what()));
+                            function_name = location_part;
+                            filename = location_part;
+                        }
+                    } else {
+                        // No line number found, try colon-separated format as fallback
+                        size_t colon_pos = frame_str.rfind(":");
+                        if (colon_pos != std::string::npos && colon_pos < frame_str.length() - 1) {
+                            std::string line_str = frame_str.substr(colon_pos + 1);
+                            // Check if it's all digits
+                            if (!line_str.empty() && std::all_of(line_str.begin(), line_str.end(), ::isdigit)) {
+                                function_name = frame_str.substr(0, colon_pos);
+                                try {
+                                    lineno = std::stoi(line_str);
+                                } catch (...) {}
+                            } else {
+                                function_name = frame_str;
+                            }
+                        } else {
+                            function_name = frame_str;
+                        }
+                        filename = function_name;
+                    }
+                    
+                    // Special handling for first frame: extract context from longMessage if not found in frame
+                    if (is_top_frame && context_line.empty() && !long_message.empty()) {
+                        log_debug("Attempting to extract context for top frame from longMessage");
+                        log_debug("Frame string: " + frame_str);
+                        log_debug("LongMessage: " + long_message);
+                        
+                        // Look for the current frame string in longMessage to find the context
+                        // The longMessage typically contains the full error with context for the top frame
+                        size_t frame_pos = long_message.find(frame_str);
+                        log_debug("Frame position in longMessage: " + (frame_pos != std::string::npos ? std::to_string(frame_pos) : "NOT_FOUND"));
+                        
+                        if (frame_pos != std::string::npos) {
+                            // Look for " - " after the frame reference on the same line
+                            size_t after_frame = frame_pos + frame_str.length();
+                            size_t dash_pos = long_message.find(" - ", after_frame);
+                            if (dash_pos != std::string::npos) {
+                                // Extract everything after " - " until the next newline
+                                size_t context_start = dash_pos + 3;
+                                size_t context_end = long_message.find('\n', context_start);
+                                if (context_end == std::string::npos) context_end = long_message.length();
+                                
+                                std::string potential_context = long_message.substr(context_start, context_end - context_start);
+                                
+                                // Clean up the context line
+                                size_t first_char = potential_context.find_first_not_of(" \t");
+                                if (first_char != std::string::npos) {
+                                    context_line = potential_context.substr(first_char);
+                                    size_t last_char = context_line.find_last_not_of(" \t\r\n");
+                                    if (last_char != std::string::npos) {
+                                        context_line = context_line.substr(0, last_char + 1);
+                                    }
+                                }
+                            }
+                        } else {
+                            // Alternative: look for this specific script+line combination in longMessage
+                            // Build a search pattern like "gml_Script_check_ammo@gml_Object_obj_player_Step_0 (line 36)"
+                            std::string search_pattern;
+                            if (!function_name.empty() && !filename.empty() && lineno > 0) {
+                                search_pattern = "gml_Script_" + function_name + "@gml_Object_" + filename + " (line " + std::to_string(lineno) + ")";
+                                log_debug("Searching for pattern: " + search_pattern);
+                                
+                                size_t pattern_pos = long_message.find(search_pattern);
+                                if (pattern_pos != std::string::npos) {
+                                    log_debug("Found pattern at position: " + std::to_string(pattern_pos));
+                                    // Look for " - " after the pattern
+                                    size_t after_pattern = pattern_pos + search_pattern.length();
+                                    size_t dash_pos = long_message.find(" - ", after_pattern);
+                                    if (dash_pos != std::string::npos) {
+                                        // Extract everything after " - " until the next newline
+                                        size_t context_start = dash_pos + 3;
+                                        size_t context_end = long_message.find('\n', context_start);
+                                        if (context_end == std::string::npos) context_end = long_message.length();
+                                        
+                                        std::string potential_context = long_message.substr(context_start, context_end - context_start);
+                                        
+                                        // Clean up the context line
+                                        size_t first_char = potential_context.find_first_not_of(" \t");
+                                        if (first_char != std::string::npos) {
+                                            context_line = potential_context.substr(first_char);
+                                            size_t last_char = context_line.find_last_not_of(" \t\r\n");
+                                            if (last_char != std::string::npos) {
+                                                context_line = context_line.substr(0, last_char + 1);
+                                            }
+                                            log_debug("Extracted context: " + context_line);
+                                        }
+                                    }
+                                } else {
+                                    log_debug("Pattern not found in longMessage");
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Set required fields for proper Sentry display
+                    if (!function_name.empty()) {
+                        sentry_value_set_by_key(frame, "function", sentry_value_new_string(function_name.c_str()));
+                    }
+                    if (!filename.empty()) {
+                        sentry_value_set_by_key(frame, "filename", sentry_value_new_string(filename.c_str()));
+                    }
+                    if (lineno > 0) {
+                        sentry_value_set_by_key(frame, "lineno", sentry_value_new_int32((int32_t)lineno));
+                    }
+                    if (!context_line.empty()) {
+                        sentry_value_set_by_key(frame, "context_line", sentry_value_new_string(context_line.c_str()));
+                    }
+                    
+                    // Mark as application code
+                    sentry_value_set_by_key(frame, "in_app", sentry_value_new_bool(true));
+                    
+                    return frame;
+                };
+                
+                // Process frames in REVERSE order (Sentry wants oldest to newest, GM gives newest to oldest)
+                if (!stacktrace_frames.empty()) {
+                    log_debug("Processing " + std::to_string(stacktrace_frames.size()) + " GML stacktrace frames in reverse order");
+                    for (int i = stacktrace_frames.size() - 1; i >= 0; --i) {
+                        const std::string& frame_str = stacktrace_frames[i];
+                        sentry_value_t frame = parseGMLFrame(frame_str, i == 0); // First in array is top frame
                         sentry_value_append(frames, frame);
                     }
                 } else {
@@ -363,7 +580,9 @@ double sentry_gm_capture_exception(const char* exception_json, double handled) {
                     
                     sentry_value_set_by_key(frame, "filename", sentry_value_new_string(script.c_str()));
                     sentry_value_set_by_key(frame, "function", sentry_value_new_string(script.c_str()));
-                    sentry_value_set_by_key(frame, "lineno", sentry_value_new_int32((int32_t)line_number));
+                    if (line_number > 0) {
+                        sentry_value_set_by_key(frame, "lineno", sentry_value_new_int32((int32_t)line_number));
+                    }
                     sentry_value_set_by_key(frame, "in_app", sentry_value_new_bool(true));
                     
                     sentry_value_append(frames, frame);
@@ -374,7 +593,7 @@ double sentry_gm_capture_exception(const char* exception_json, double handled) {
                 
                 log_debug("GML-only stacktrace created successfully with " + std::to_string(sentry_value_get_length(frames)) + " frames");
                 
-                // Attach stacktrace to exception - do NOT call sentry_value_set_stacktrace with native frames
+                // Attach stacktrace to exception
                 sentry_value_set_by_key(exc, "stacktrace", stacktrace);
             }
         }
