@@ -318,51 +318,56 @@ double sentry_gm_capture_exception(const char* exception_json) {
             return -1.0;
         }
         
-        // Create stacktrace if we have frame data
+        // Create stacktrace if we have frame data - only use GML frames, not native C++ frames
         if (!stacktrace_frames.empty() || (!script.empty() && line_number > 0)) {
-            log_debug("Creating stacktrace...");
+            log_debug("Creating GML-only stacktrace...");
             
-            sentry_value_t stacktrace = sentry_value_new_stacktrace(NULL, 0);
-            if (!sentry_value_is_null(stacktrace)) {
-                sentry_value_t frames = sentry_value_get_by_key(stacktrace, "frames");
-                if (!sentry_value_is_null(frames)) {
-                    // If we have explicit stacktrace frames, use them
-                    if (!stacktrace_frames.empty()) {
-                        for (size_t i = 0; i < stacktrace_frames.size(); ++i) {
-                            sentry_value_t frame = sentry_value_new_object();
-                            
-                            // Try to parse each frame string for useful info
-                            const std::string& frame_str = stacktrace_frames[i];
-                            sentry_value_set_by_key(frame, "function", sentry_value_new_string(frame_str.c_str()));
-                            sentry_value_set_by_key(frame, "in_app", sentry_value_new_bool(true));
-                            
-                            // Set script and line for the top frame if available
-                            if (i == 0 && !script.empty()) {
-                                sentry_value_set_by_key(frame, "filename", sentry_value_new_string(script.c_str()));
-                                if (line_number > 0) {
-                                    sentry_value_set_by_key(frame, "lineno", sentry_value_new_int32((int32_t)line_number));
-                                }
-                            }
-                            
-                            sentry_value_append(frames, frame);
-                        }
-                    } else {
-                        // Create a single frame from script/line data
+            // Create stacktrace object manually to avoid capturing native frames
+            sentry_value_t stacktrace = sentry_value_new_object();
+            sentry_value_t frames = sentry_value_new_list();
+            
+            if (!sentry_value_is_null(stacktrace) && !sentry_value_is_null(frames)) {
+                // If we have explicit stacktrace frames, use them
+                if (!stacktrace_frames.empty()) {
+                    log_debug("Processing " + std::to_string(stacktrace_frames.size()) + " GML stacktrace frames");
+                    for (size_t i = 0; i < stacktrace_frames.size(); ++i) {
+                        const std::string& frame_str = stacktrace_frames[i];
+                        
                         sentry_value_t frame = sentry_value_new_object();
                         
-                        sentry_value_set_by_key(frame, "filename", sentry_value_new_string(script.c_str()));
-                        sentry_value_set_by_key(frame, "function", sentry_value_new_string(script.c_str()));
-                        sentry_value_set_by_key(frame, "lineno", sentry_value_new_int32((int32_t)line_number));
+                        // Parse GML frame string for useful info
+                        sentry_value_set_by_key(frame, "function", sentry_value_new_string(frame_str.c_str()));
                         sentry_value_set_by_key(frame, "in_app", sentry_value_new_bool(true));
+                        
+                        // Set script and line for the top frame if available
+                        if (i == 0 && !script.empty()) {
+                            sentry_value_set_by_key(frame, "filename", sentry_value_new_string(script.c_str()));
+                            if (line_number > 0) {
+                                sentry_value_set_by_key(frame, "lineno", sentry_value_new_int32((int32_t)line_number));
+                            }
+                        }
                         
                         sentry_value_append(frames, frame);
                     }
+                } else {
+                    // Create a single frame from script/line data
+                    log_debug("Creating single GML frame from script/line data");
+                    sentry_value_t frame = sentry_value_new_object();
                     
-                    log_debug("Stacktrace created successfully");
+                    sentry_value_set_by_key(frame, "filename", sentry_value_new_string(script.c_str()));
+                    sentry_value_set_by_key(frame, "function", sentry_value_new_string(script.c_str()));
+                    sentry_value_set_by_key(frame, "lineno", sentry_value_new_int32((int32_t)line_number));
+                    sentry_value_set_by_key(frame, "in_app", sentry_value_new_bool(true));
+                    
+                    sentry_value_append(frames, frame);
                 }
                 
-                // Attach stacktrace to exception
-                sentry_value_set_stacktrace(exc, NULL, 0);
+                // Set frames array on stacktrace object
+                sentry_value_set_by_key(stacktrace, "frames", frames);
+                
+                log_debug("GML-only stacktrace created successfully with " + std::to_string(sentry_value_get_length(frames)) + " frames");
+                
+                // Attach stacktrace to exception - do NOT call sentry_value_set_stacktrace with native frames
                 sentry_value_set_by_key(exc, "stacktrace", stacktrace);
             }
         }
