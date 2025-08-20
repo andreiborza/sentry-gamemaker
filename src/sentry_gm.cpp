@@ -82,6 +82,10 @@ double sentry_gm_init(const char* dsn, const char* database_path, double sample_
     // Set debug mode and custom logger
     sentry_options_set_debug(options, (int)debug);
     
+    // Set SDK name
+    sentry_options_set_sdk_name(options, "sentry.native.gamemaker");
+    log_debug("SDK name set to: sentry.native.gamemaker");
+    
     // Set crashpad handler path - find it relative to the extension library
     std::string handler_path;
     
