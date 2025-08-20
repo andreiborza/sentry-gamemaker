@@ -44,12 +44,11 @@ void sentry_logger(sentry_level_t level, const char *message, va_list args, void
 }
 
 // Initialize Sentry with options  
-double sentry_gm_init(const char* dsn, const char* database_path, const char* release, const char* crashpad_handler_path, double debug) {
+double sentry_gm_init(const char* dsn, const char* database_path, const char* crashpad_handler_path, double debug) {
 
     log_debug("Initializing Sentry...");
     log_debug("DSN: " + std::string(dsn ? dsn : "NULL"));
     log_debug("Database path: " + std::string(database_path ? database_path : "NULL"));
-    log_debug("Release: " + std::string(release ? release : "NULL"));
     log_debug("Crashpad handler path: " + std::string(crashpad_handler_path ? crashpad_handler_path : "NULL"));
     log_debug("Debug mode: " + std::to_string((int)debug));
     
@@ -73,12 +72,6 @@ double sentry_gm_init(const char* dsn, const char* database_path, const char* re
     
     sentry_options_set_database_path(options, db_path.c_str());
     log_debug("Database path set to: " + db_path);
-    
-    // Set release (optional)
-    if (release && strlen(release) > 0) {
-        sentry_options_set_release(options, release);
-        log_debug("Release set to: " + std::string(release));
-    }
     
     // Set debug mode and custom logger
     sentry_options_set_debug(options, (int)debug);

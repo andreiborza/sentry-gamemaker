@@ -47,7 +47,7 @@ var save_dir = game_save_id;
 var sentry_db_path = save_dir + ".sentry-native";
   
 // Initialize Sentry
-var result = sentry_init(dsn, sentry_db_path, "my-game@1.0.0", debug ? 1.0 : 0.0);
+var result = sentry_init(dsn, sentry_db_path, debug ? 1.0 : 0.0);
 
 show_debug_message("called sentry init: " + string(result))
 
