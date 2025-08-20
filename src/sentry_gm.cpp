@@ -44,12 +44,12 @@ void sentry_logger(sentry_level_t level, const char *message, va_list args, void
 }
 
 // Initialize Sentry with options  
-double sentry_gm_init(const char* dsn, const char* database_path, const char* crashpad_handler_path, double debug) {
+double sentry_gm_init(const char* dsn, const char* database_path, double sample_rate, double debug) {
 
     log_debug("Initializing Sentry...");
     log_debug("DSN: " + std::string(dsn ? dsn : "NULL"));
     log_debug("Database path: " + std::string(database_path ? database_path : "NULL"));
-    log_debug("Crashpad handler path: " + std::string(crashpad_handler_path ? crashpad_handler_path : "NULL"));
+    log_debug("Sample rate: " + std::to_string(sample_rate));
     log_debug("Debug mode: " + std::to_string((int)debug));
     
     sentry_options_t* options = sentry_options_new();
@@ -72,6 +72,10 @@ double sentry_gm_init(const char* dsn, const char* database_path, const char* cr
     
     sentry_options_set_database_path(options, db_path.c_str());
     log_debug("Database path set to: " + db_path);
+    
+    // Set sample rate
+    sentry_options_set_sample_rate(options, sample_rate);
+    log_debug("Sample rate set to: " + std::to_string(sample_rate));
     
     // Set debug mode and custom logger
     sentry_options_set_debug(options, (int)debug);

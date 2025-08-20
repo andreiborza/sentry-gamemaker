@@ -38,16 +38,18 @@ var options = extension_get_options("Sentry");
 var dsn = options.DSN;
 var debug = options.debug;
 var setup_exception_handler = options.setup_exception_handler;
+var sample_rate = options.sample_rate;
 
 if (debug) {
     show_debug_message("[SENTRY] Auto-initializing Sentry with DSN: " + dsn);
+    show_debug_message("[SENTRY] Sample rate: " + string(sample_rate));
 }
 
 var save_dir = game_save_id;
 var sentry_db_path = save_dir + ".sentry-native";
   
 // Initialize Sentry
-var result = sentry_init(dsn, sentry_db_path, debug ? 1.0 : 0.0);
+var result = sentry_init(dsn, sentry_db_path, sample_rate, debug ? 1.0 : 0.0);
 
 show_debug_message("called sentry init: " + string(result))
 

@@ -40,8 +40,9 @@ GameMaker extension for error monitoring and crash reporting with [Sentry](https
 ## Configuration
 
 1. In the Asset Browser, expand **Extensions** and double-click **Sentry**
-2. In the Extension Properties, configure your Sentry DSN:
+2. In the Extension Properties, configure your Sentry settings:
    - Set **DSN** to your Sentry project DSN
+   - Set **sample_rate** to control error sampling (default: `1.0` = 100%, `0.5` = 50%, etc.)
    - Set **debug** to `true` for development, `false` for production  
    - Set **setup_exception_handler** to `true` to automatically capture unhandled exceptions
 
@@ -63,9 +64,10 @@ For more control over initialization, you can disable automatic setup and initia
 // Initialize Sentry
 var dsn = "YOUR_SENTRY_DSN_HERE";
 var db_path = game_save_id + ".sentry-native";
+var sample_rate = 1.0; // 1.0 = 100% sampling, 0.5 = 50% sampling
 var debug_enabled = 1.0; // 1.0 for debug, 0.0 for production
 
-sentry_init(dsn, db_path, debug_enabled);
+sentry_init(dsn, db_path, sample_rate, debug_enabled);
 
 // Set up exception handler
 exception_unhandled_handler(sentry_exception_handler);
@@ -95,13 +97,29 @@ try {
 }
 ```
 
+## Configuration Options
+
+### Sample Rate
+
+The `sample_rate` option controls what percentage of errors are sent to Sentry. This is useful for high-traffic applications where you want to reduce the volume of events while still getting a representative sample.
+
+- **Range**: `0.0` to `1.0`
+- **Default**: `1.0` (100% of errors are sent)
+- **Examples**:
+  - `1.0` = Send 100% of errors (recommended for development)
+  - `0.5` = Send 50% of errors
+  - `0.1` = Send 10% of errors (good for high-volume production games)
+  - `0.0` = Send 0% of errors (effectively disables error reporting)
+
+The sampling is deterministic per event, meaning the same error will consistently be either included or excluded based on the sample rate.
+
 ## API Reference
 
 ### Core Functions
 
 | Function | Description |
 |----------|-------------|
-| `sentry_init(dsn, db_path, debug)` | Initialize Sentry with DSN and database path |
+| `sentry_init(dsn, db_path, sample_rate, debug)` | Initialize Sentry with DSN, database path, sampling rate, and debug mode |
 | `sentry_close()` | Clean shutdown of Sentry |
 | `sentry_auto_init()` | Automatic initialization using extension options |
 
