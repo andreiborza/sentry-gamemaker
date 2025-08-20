@@ -47,6 +47,10 @@ add_custom_command(TARGET sentry_gm POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_CURRENT_SOURCE_DIR}/src/extensions/sentry_gamemaker"
         "${CMAKE_CURRENT_SOURCE_DIR}/demo/SentryGameMaker/extensions/sentry_gamemaker"
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying sentry_gamemaker.json to demo project..."
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/options/extensions/sentry_gamemaker.json"
+        "${CMAKE_CURRENT_SOURCE_DIR}/demo/SentryGameMaker/options/extensions/sentry_gamemaker.json"
     COMMENT "Copying extension files to demo project"
 )
 

@@ -49,7 +49,10 @@
   "maclinkerflags":"",
   "macsourcedir":"",
   "name":"sentry_gamemaker",
-  "options":[],
+  "options":[
+    {"$GMExtensionOption":"","%Name":"DSN","defaultValue":"","description":"","displayName":"","exportToINI":false,"extensionId":null,"guid":"26ab4663-89aa-490f-8659-3c5089c77e4e","hidden":false,"listItems":[],"name":"DSN","optType":2,"resourceType":"GMExtensionOption","resourceVersion":"2.0",},
+    {"$GMExtensionOption":"","%Name":"debug","defaultValue":"False","description":"","displayName":"","exportToINI":false,"extensionId":null,"guid":"d8421735-f0d3-445c-a831-aa1f9f7b3b75","hidden":false,"listItems":[],"name":"debug","optType":0,"resourceType":"GMExtensionOption","resourceVersion":"2.0",},
+  ],
   "optionsFile":"options.json",
   "packageId":"",
   "parent":{
