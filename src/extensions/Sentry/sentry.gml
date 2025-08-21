@@ -49,7 +49,7 @@ if (debug) {
 var save_dir = game_save_id;
 var sentry_db_path = save_dir + ".sentry-native";
   
-// Initialize Sentry
+// Initialize Sentry (PII is always enabled for POC)
 var result = sentry_init(dsn, sentry_db_path, sample_rate, debug ? 1.0 : 0.0);
 
 show_debug_message("called sentry init: " + string(result))

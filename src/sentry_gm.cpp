@@ -82,6 +82,7 @@ double sentry_gm_init(const char* dsn, const char* database_path, double sample_
     // Set debug mode and custom logger
     sentry_options_set_debug(options, (int)debug);
     
+    
     // Set SDK name
     sentry_options_set_sdk_name(options, "sentry.native.gamemaker");
     log_debug("SDK name set to: sentry.native.gamemaker");
@@ -820,12 +821,12 @@ double sentry_gm_set_user(const char* user_id, const char* username, const char*
     log_debug("Email: " + std::string(email ? email : "NULL"));
     log_debug("IP Address: " + std::string(ip_address ? ip_address : "NULL"));
     
-    // Create user object - sentry_value_new_user handles NULL parameters gracefully
+    // Create user object - never set IP address as per user request
     sentry_value_t user = sentry_value_new_user(
         user_id && strlen(user_id) > 0 ? user_id : nullptr,
         username && strlen(username) > 0 ? username : nullptr,
         email && strlen(email) > 0 ? email : nullptr,
-        ip_address && strlen(ip_address) > 0 ? ip_address : nullptr
+        nullptr  // Never set IP address
     );
     
     if (sentry_value_is_null(user)) {
