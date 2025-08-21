@@ -636,6 +636,210 @@ double sentry_gm_capture_exception(const char* exception_json, double handled) {
     }
 }
 
+// Add breadcrumb with JSON configuration (GameMaker-compatible with ≤4 args of same type)
+double sentry_gm_add_breadcrumb_json(const char* message, const char* breadcrumb_json) {
+    log_debug("Adding breadcrumb with JSON config...");
+    log_debug("Message: " + std::string(message ? message : "NULL"));
+    log_debug("Breadcrumb JSON: " + std::string(breadcrumb_json ? breadcrumb_json : "NULL"));
+    
+    if (!message) {
+        log_debug("ERROR: Message is NULL");
+        return -1.0;
+    }
+    
+    std::string category = "default";
+    std::string type = "default";
+    int level = 1; // info
+    std::string tags_json = "";
+    
+    // Parse breadcrumb configuration JSON
+    if (breadcrumb_json && strlen(breadcrumb_json) > 0) {
+        try {
+            using json = nlohmann::json;
+            json config = json::parse(breadcrumb_json);
+            
+            if (config.contains("category") && config["category"].is_string()) {
+                category = config["category"].get<std::string>();
+            }
+            if (config.contains("type") && config["type"].is_string()) {
+                type = config["type"].get<std::string>();
+            }
+            if (config.contains("level") && config["level"].is_number()) {
+                level = config["level"].get<int>();
+            }
+            if (config.contains("data") && config["data"].is_object()) {
+                tags_json = config["data"].dump();
+            }
+            
+            log_debug("Parsed - Category: " + category);
+            log_debug("Parsed - Type: " + type);
+            log_debug("Parsed - Level: " + std::to_string(level));
+            log_debug("Parsed - Data: " + tags_json);
+        } catch (...) {
+            log_debug("WARNING: Failed to parse breadcrumb JSON, using defaults");
+        }
+    }
+    
+    // Convert level to sentry_level_t
+    sentry_level_t sentry_level;
+    switch (level) {
+        case 0: sentry_level = SENTRY_LEVEL_DEBUG; break;
+        case 1: sentry_level = SENTRY_LEVEL_INFO; break;
+        case 2: sentry_level = SENTRY_LEVEL_WARNING; break;
+        case 3: sentry_level = SENTRY_LEVEL_ERROR; break;
+        case 4: sentry_level = SENTRY_LEVEL_FATAL; break;
+        default: sentry_level = SENTRY_LEVEL_INFO; break;
+    }
+    
+    // Create breadcrumb
+    sentry_value_t breadcrumb = sentry_value_new_breadcrumb(type.c_str(), message);
+    
+    if (sentry_value_is_null(breadcrumb)) {
+        log_debug("ERROR: Failed to create breadcrumb");
+        return -1.0;
+    }
+    
+    // Set level
+    sentry_value_set_by_key(breadcrumb, "level", sentry_value_new_string(
+        level == 0 ? "debug" :
+        level == 1 ? "info" :
+        level == 2 ? "warning" :
+        level == 3 ? "error" :
+        level == 4 ? "fatal" : "info"
+    ));
+    
+    // Set category
+    sentry_value_set_by_key(breadcrumb, "category", sentry_value_new_string(category.c_str()));
+    
+    // Parse and add data if provided
+    if (!tags_json.empty()) {
+        try {
+            using json = nlohmann::json;
+            json tags_data = json::parse(tags_json);
+            
+            if (tags_data.is_object()) {
+                sentry_value_t data = sentry_value_new_object();
+                
+                for (auto& [key, value] : tags_data.items()) {
+                    if (value.is_string()) {
+                        sentry_value_set_by_key(data, key.c_str(), sentry_value_new_string(value.get<std::string>().c_str()));
+                    } else if (value.is_number()) {
+                        sentry_value_set_by_key(data, key.c_str(), sentry_value_new_double(value.get<double>()));
+                    } else if (value.is_boolean()) {
+                        sentry_value_set_by_key(data, key.c_str(), sentry_value_new_bool(value.get<bool>()));
+                    }
+                }
+                
+                sentry_value_set_by_key(breadcrumb, "data", data);
+                log_debug("Data added to breadcrumb");
+            }
+        } catch (...) {
+            log_debug("WARNING: Failed to parse data JSON, continuing without data");
+        }
+    }
+    
+    // Add breadcrumb to Sentry
+    sentry_add_breadcrumb(breadcrumb);
+    log_debug("Breadcrumb added successfully");
+    
+    return 1.0;
+}
+
+// Add breadcrumb with message, category, type and optional tags
+// Note: Level parameter removed due to GameMaker limitation - functions with >4 args must all be same type
+double sentry_gm_add_breadcrumb(const char* message, const char* category, const char* type, const char* tags_json) {
+    log_debug("Adding breadcrumb...");
+    log_debug("Message: " + std::string(message ? message : "NULL"));
+    log_debug("Category: " + std::string(category ? category : "NULL"));
+    log_debug("Type: " + std::string(type ? type : "NULL"));
+    log_debug("Tags JSON: " + std::string(tags_json ? tags_json : "NULL"));
+    
+    if (!message) {
+        log_debug("ERROR: Message is NULL");
+        return -1.0;
+    }
+    
+    // Create breadcrumb with default info level
+    sentry_value_t breadcrumb = sentry_value_new_breadcrumb(
+        type ? type : "default", 
+        message
+    );
+    
+    if (sentry_value_is_null(breadcrumb)) {
+        log_debug("ERROR: Failed to create breadcrumb");
+        return -1.0;
+    }
+    
+    // Set default info level
+    sentry_value_set_by_key(breadcrumb, "level", sentry_value_new_string("info"));
+    
+    // Set category if provided
+    if (category && strlen(category) > 0) {
+        sentry_value_set_by_key(breadcrumb, "category", sentry_value_new_string(category));
+    }
+    
+    // Parse and add tags if provided
+    if (tags_json && strlen(tags_json) > 0) {
+        try {
+            using json = nlohmann::json;
+            json tags_data = json::parse(tags_json);
+            
+            if (tags_data.is_object()) {
+                sentry_value_t data = sentry_value_new_object();
+                
+                for (auto& [key, value] : tags_data.items()) {
+                    if (value.is_string()) {
+                        sentry_value_set_by_key(data, key.c_str(), sentry_value_new_string(value.get<std::string>().c_str()));
+                    } else if (value.is_number()) {
+                        sentry_value_set_by_key(data, key.c_str(), sentry_value_new_double(value.get<double>()));
+                    } else if (value.is_boolean()) {
+                        sentry_value_set_by_key(data, key.c_str(), sentry_value_new_bool(value.get<bool>()));
+                    }
+                }
+                
+                sentry_value_set_by_key(breadcrumb, "data", data);
+                log_debug("Tags added to breadcrumb data");
+            }
+        } catch (...) {
+            log_debug("WARNING: Failed to parse tags JSON, continuing without tags");
+        }
+    }
+    
+    // Add breadcrumb to Sentry
+    sentry_add_breadcrumb(breadcrumb);
+    log_debug("Breadcrumb added successfully");
+    
+    return 1.0;
+}
+
+// Set user information
+double sentry_gm_set_user(const char* user_id, const char* username, const char* email, const char* ip_address) {
+    log_debug("Setting user...");
+    log_debug("User ID: " + std::string(user_id ? user_id : "NULL"));
+    log_debug("Username: " + std::string(username ? username : "NULL"));
+    log_debug("Email: " + std::string(email ? email : "NULL"));
+    log_debug("IP Address: " + std::string(ip_address ? ip_address : "NULL"));
+    
+    // Create user object - sentry_value_new_user handles NULL parameters gracefully
+    sentry_value_t user = sentry_value_new_user(
+        user_id && strlen(user_id) > 0 ? user_id : nullptr,
+        username && strlen(username) > 0 ? username : nullptr,
+        email && strlen(email) > 0 ? email : nullptr,
+        ip_address && strlen(ip_address) > 0 ? ip_address : nullptr
+    );
+    
+    if (sentry_value_is_null(user)) {
+        log_debug("WARNING: User object is null (all parameters were null)");
+        return 0.0;
+    }
+    
+    // Set the user
+    sentry_set_user(user);
+    log_debug("User set successfully");
+    
+    return 1.0;
+}
+
 // Close Sentry
 double sentry_gm_close() {
     sentry_close();
