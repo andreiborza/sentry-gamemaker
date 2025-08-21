@@ -23,14 +23,20 @@ if (keyboard_check_pressed(vk_space)) {
 	    "user",
 	    "{\"current_ammo\": " + string(ammo) + ", \"player_angle\": " + string(image_angle) + "}"
 	);
-	shoot();
+	
+	shoot("bullet");
+}
+
+if (keyboard_check_pressed(ord("X")) || keyboard_check_pressed(ord("Z")) || keyboard_check_pressed(ord("C"))) {
+	shoot("bomb");
 }
 
 move_wrap(true, true, sprite_width / 2)
 
-function shoot() {
+function shoot(type) {
 	if (check_ammo()) {
 		ammo -= 1;
+		create_bullet(type);
 		show_debug_message("Shot! Ammo left: " + string(ammo));
 		
 		// Add breadcrumb for successful shot
@@ -50,6 +56,29 @@ function shoot() {
 			    "{\"ammo_remaining\": " + string(ammo) + "}"
 			);
 		}
+	}
+}
+
+function create_bullet(type) {
+	var inst;
+	
+	switch (type) {
+		case "bullet":
+			inst = instance_create_layer(x, y, "Instances", obj_bullet);
+			inst.image_angle = image_angle;
+			inst.direction = image_angle;
+		break;
+		
+		 case "bomb":
+			inst = instance_create_layer(x, y, "Instances", obj_bomb);
+			inst.image_angle = image_angle;
+			inst.direction = image_angle;
+		break;
+		
+		default:
+			inst = instance_create_layer(x, y, "Instances", obj_bullet);
+			inst.image_angle = image_angle;
+			inst.direction = image_angle;
 	}
 }
 
